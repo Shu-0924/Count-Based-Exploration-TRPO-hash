@@ -11,7 +11,7 @@ TRPO and SimHash with continuous control
 
 ## Arcade Learning Environment
 
-TRPO-hash in Arcade Learning Environment (Atari)
+We compared TRPO, TRPO-pixel-SimHash, TRPO-BASS-SimHash and TRPO-AE-SimHash with 15M steps in six games listed in original paper
 
 > We provide a notebook example for TRPO_baseline with 0.5M steps which can be run on kaggle
 
