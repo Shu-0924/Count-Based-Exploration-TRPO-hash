@@ -21,13 +21,13 @@ We provide following algorithms:
 
 ## How to run
 
-### Python version:
+#### Python version:
 - Python 3.10
 
-### To install requirements:
+#### To install requirements:
     pip install -r requirements.txt
 
-### Run our code:
+#### Run our code:
 - You can just run any .py file directly
 
 <br>
