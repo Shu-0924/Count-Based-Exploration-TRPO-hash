@@ -11,7 +11,7 @@ TRPO and SimHash with continuous control
 
 TRPO-hash in Arcade Learning Environment (Atari)
 
-> We provide a notebook example for TRPO_baseline which can run on kaggle
+> We provide a notebook example for TRPO_baseline which can be run on kaggle
 
 
 ## Reference
