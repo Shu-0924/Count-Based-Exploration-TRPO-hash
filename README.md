@@ -1,8 +1,6 @@
 # Count-Based-Exploration-TRPO-hash
 Our implementation of "#Exploration: A Study of Count-Based Exploration for Deep Reinforcement Learning": https://arxiv.org/pdf/1611.04717v3.pdf
 
-> To run our code, you can directly run each .py file
-
 <br>
 
 ## Continuous Control
@@ -18,6 +16,19 @@ We provide following algorithms:
 - TRPO-AE-SimHash
 
 > We also provide a notebook for TRPO_baseline which can be run on kaggle
+
+<br>
+
+## How to run
+
+### Python version:
+> Python 3.10
+
+### To install requirements:
+    pip install -r requirements.txt
+
+### Run our code:
+- You can just run any .py file directly
 
 <br>
 
