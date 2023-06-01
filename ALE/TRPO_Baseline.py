@@ -300,8 +300,8 @@ class TRPO(object):
             tags = ['{}/epoch-average-reward'.format(self.env.unwrapped.spec.id)]
             for tag, value in zip(tags, [epoch_avg_reward]):
                 writer.add_scalar(tag, value, i+1)
-
-            torch.cuda.reset_max_memory_allocated(device=device)
+            if torch.cuda.is_available():
+                torch.cuda.reset_max_memory_allocated(device=device)
             epoch_rewards.clear()
             self.memory.clear()
 
