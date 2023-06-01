@@ -4,14 +4,18 @@ Our implementation of "#Exploration: A Study of Count-Based Exploration for Deep
 <br>
 
 ## Continuous Control
-
-TRPO and SimHash with continuous control
+We compared TRPO-SimHash with normal TRPO in continuous control, and found that Count-Based-Exploration works better in the environment with sparse reward
 
 <br>
 
 ## Arcade Learning Environment
+We provide following algorithms: 
+- TRPO
+- TRPO-pixel-SimHash
+- TRPO-BASS-SimHash
+- TRPO-AE-SimHash
 
-We compared TRPO, TRPO-pixel-SimHash, TRPO-BASS-SimHash and TRPO-AE-SimHash with 15M steps in six games listed in original paper. Moreover, we provide a notebook example for TRPO_baseline with 0.5M steps which can be run on kaggle.
+> We also provide a notebook for TRPO_baseline which can be run on kaggle
 
 <br>
 
