@@ -22,7 +22,7 @@ We provide following algorithms:
 ## How to run
 
 ### Python version:
-> Python 3.10
+- Python 3.10
 
 ### To install requirements:
     pip install -r requirements.txt
