@@ -4,7 +4,7 @@ Our implementation of "#Exploration: A Study of Count-Based Exploration for Deep
 <br>
 
 ## Continuous Control
-We compared TRPO-SimHash with normal TRPO in continuous control, and found that Count-Based-Exploration works better in the environment with sparse reward
+We compared TRPO-SimHash with normal TRPO in continuous control, and found that Count-Based-Exploration works better in the environment with sparse rewards.
 
 <br>
 
