@@ -362,6 +362,7 @@ if __name__ == '__main__':
     env_name = 'ALE/Freeway-v5'
     train_env = gym.make(env_name)
     test_env = gym.make(env_name)
+    # test_env = gym.make(env_name, render_mode='human')
 
     train_env.seed(random_seed)
     np.random.seed(random_seed)
