@@ -30,8 +30,10 @@ class SimHash(object):
 
     def get_keys(self, states):
         keys = []
+        A = torch.from_numpy(self.A).float().to(device)
         for state in states:
-            key = (np.asarray(np.sign(self.A @ state), dtype=int) + 1) // 2  # to binary code array
+            Av = torch.matmul(A, torch.tensor(state).float().to(device)).to('cpu').numpy()
+            key = (np.asarray(np.sign(Av), dtype=int) + 1) // 2  # to binary code array
             key = int(''.join(key.astype(str).tolist()), base=2)  # to int (binary)
             keys.append(key)
             if key in self.hash_table:
@@ -365,12 +367,13 @@ if __name__ == '__main__':
     random_seed = 48763
     env_name = 'ALE/Frostbite-v5'
     train_env = gym.make(env_name)
-    test_env = gym.make(env_name, render_mode='human')
+    test_env = gym.make(env_name)
+    # test_env = gym.make(env_name, render_mode='human')
 
     train_env.seed(random_seed)
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
 
-    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=1e-3)
-    agent.train(num_epoch=500, update_step=10000, show_freq=None)
+    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=3e-4)
+    agent.train(num_epoch=1500, update_step=10000, show_freq=None)
     agent.eval(num_episode=5)
