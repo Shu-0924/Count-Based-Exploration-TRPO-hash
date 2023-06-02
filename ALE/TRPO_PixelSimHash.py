@@ -19,13 +19,13 @@ writer = SummaryWriter(f"./tb_record_{algo}")
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'key'))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-
 class SimHash(object):
     def __init__(self, k, D, beta):
         self.k = k
         self.D = D
         self.A = np.random.normal(0, 1, (k, D))
         self.hash_table = {}
+        self.new_hash_table = {}
         self.beta = beta
 
     def get_keys(self, states):
@@ -114,7 +114,7 @@ class TRPO(object):
         self.env_eval = env_eval
         self.num_states = env.observation_space.shape[0]
         self.num_actions = env.action_space.n
-        self.simhash = SimHash(k, 52*52, beta)
+        self.simhash = SimHash(k, 210*160*3, beta)
 
         self.actor = Actor(num_outputs=self.num_actions)
         self.critic = Critic()
@@ -282,22 +282,25 @@ class TRPO(object):
                 prev_states.append(preprocess_state)
                 prev_states.append(preprocess_state)
                 prev_states.append(preprocess_state)
+                prev_raw_pixel = state
 
                 t = 0
                 while True:
                     input_stack = np.array(prev_states[-4:])
                     action = self.select_action(input_stack)
                     next_state, reward, done, _ = self.env.step(action)
-                    sample.append((input_stack, action, reward, prev_states[-1].flatten()))
+                    sample.append((input_stack, action, reward, prev_raw_pixel.flatten()))
                     prev_states.append(preprocess_image(next_state))
+                    prev_raw_pixel = next_state
                     episode_reward += reward
                     epoch_t += 1
                     t += 1
+
                     if done:
                         break
 
-                states, actions, rewards, s = zip(*sample)
-                keys = self.simhash.get_keys(s)
+                states, actions, rewards, prev_raw_pixel = zip(*sample)
+                keys = self.simhash.get_keys(prev_raw_pixel)
                 states = torch.stack([torch.from_numpy(state) for state in states], dim=0).float()
                 actions = torch.as_tensor(actions).unsqueeze(1)
                 rewards = np.array(rewards)
@@ -324,12 +327,13 @@ class TRPO(object):
             print('\r{}/{} [====================] '.format(update_step, update_step), end='')
             print('- {:.2f}s {:.2f}ms/step '.format(running_time, running_time * 1000 / epoch_t, 2), end='')
             print('- num_episode: {} - avg_reward: {:.2f}'.format(len(epoch_rewards), epoch_avg_reward))
-            print('Peak cuda memory used: {:.2f}MB'.format(int(torch.cuda.max_memory_allocated()) / 1048576), end='\n\n')
+            print('Peak cuda memory used: {:.2f}MB'.format(int(torch.cuda.max_memory_allocated()) / 1048576),
+                  end='\n\n')
             tags = ['{}/epoch-average-reward'.format(self.env.unwrapped.spec.id)]
             for tag, value in zip(tags, [epoch_avg_reward]):
                 writer.add_scalar(tag, value, i + 1)
-            if torch.cuda.is_available():
-                torch.cuda.reset_max_memory_allocated(device=device)
+
+            torch.cuda.reset_max_memory_allocated(device=device)
             epoch_rewards.clear()
             self.memory.clear()
 
@@ -359,14 +363,14 @@ class TRPO(object):
 
 if __name__ == '__main__':
     random_seed = 48763
-    env_name = 'ALE/Freeway-v5'
+    env_name = 'ALE/Frostbite-v5'
     train_env = gym.make(env_name)
-    test_env = gym.make(env_name)
-    # test_env = gym.make(env_name, render_mode='human')
+    test_env = gym.make(env_name, render_mode='human')
 
     train_env.seed(random_seed)
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
 
-    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=3e-4)
-    agent.train(num_epoch=1500, update_step=10000, show_freq=None)
+    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=1e-3)
+    agent.train(num_epoch=500, update_step=10000, show_freq=None)
+    agent.eval(num_episode=5)
