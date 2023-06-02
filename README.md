@@ -9,7 +9,7 @@ We compared **TRPO-SimHash** with normal **TRPO** in continuous control, and fou
 <br>
 
 ## Arcade Learning Environment
-**We provide following algorithms**: 
+We provide following algorithms:
 - **TRPO**
 - **TRPO-pixel-SimHash**
 - **TRPO-BASS-SimHash**
