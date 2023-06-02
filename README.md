@@ -27,7 +27,7 @@ We provide following algorithms:
 #### To install requirements:
     pip install -r requirements.txt
 
-#### Run our code:
+#### To run our code:
 - You can just run any .py file directly
 
 <br>
