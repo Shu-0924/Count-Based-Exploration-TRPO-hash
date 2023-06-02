@@ -376,4 +376,3 @@ if __name__ == '__main__':
 
     agent = TRPO(train_env, test_env, gamma=0.995, lr_c=3e-4)
     agent.train(num_epoch=1500, update_step=10000, show_freq=None)
-    agent.eval(num_episode=5)
