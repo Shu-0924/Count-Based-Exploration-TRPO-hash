@@ -14,7 +14,7 @@ import pathlib
 import gym
 
 
-algo = 'atari_pixelsimhash'
+algo = 'atari_bass_simhash'
 writer = SummaryWriter(f"./tb_record_{algo}")
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'key'))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -136,7 +136,7 @@ class Critic(nn.Module):
 
 
 class TRPO(object):
-    def __init__(self, env, env_eval, gamma=0.995, lr_c=1e-3, k=256, beta=0.01, save_folder=None, c=20, b=20):
+    def __init__(self, env, env_eval, gamma=0.995, lr_c=1e-3, k=256, beta=0.01, c=20, b=20, save_folder=None):
         self.env = env
         self.env_eval = env_eval
         self.num_states = env.observation_space.shape[0]
