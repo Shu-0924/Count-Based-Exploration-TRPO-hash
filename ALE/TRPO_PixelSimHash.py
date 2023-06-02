@@ -14,7 +14,7 @@ import pathlib
 import gym
 
 
-algo = 'atari_pixelsimhash'
+algo = 'atari_pixel_simhash'
 writer = SummaryWriter(f"./tb_record_{algo}")
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'key'))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
