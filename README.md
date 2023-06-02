@@ -10,6 +10,8 @@ We compared **TRPO-SimHash** with normal **TRPO** in continuous control, and fou
 
 <br>
 
+![](https://cdn.discordapp.com/attachments/713005024111755304/1114115094209642496/image.png)
+
 ## Arcade Learning Environment
 We provide following algorithms:
 - **TRPO**
