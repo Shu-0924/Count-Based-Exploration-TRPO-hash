@@ -14,7 +14,7 @@ import pathlib
 import gym
 
 
-algo = 'atari_pixelsimhash'
+algo = 'atari_basssimhash'
 writer = SummaryWriter(f"./tb_record_{algo}")
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'key'))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -50,7 +50,7 @@ class SimHash(object):
     def __init__(self, k, D, beta):
         self.k = k
         self.D = D
-        self.A = np.random.normal(0, 1, (k, D))
+        self.A = torch.from_numpy(np.random.normal(0, 1, (k, D))).float().to(device)
         self.hash_table = {}
         self.new_hash_table = {}
         self.beta = beta
@@ -58,7 +58,8 @@ class SimHash(object):
     def get_keys(self, states):
         keys = []
         for state in states:
-            key = (np.asarray(np.sign(self.A @ state), dtype=int) + 1) // 2  # to binary code array
+            Av = torch.matmul(self.A, torch.tensor(state).float().to(device)).to('cpu').numpy()
+            key = (np.asarray(np.sign(Av), dtype=int) + 1) // 2  # to binary code array
             key = int(''.join(key.astype(str).tolist()), base=2)  # to int (binary)
             keys.append(key)
             if key in self.hash_table:
@@ -70,7 +71,6 @@ class SimHash(object):
     def get_bonus(self, keys):
         cnt = np.array([self.hash_table[key] for key in keys])
         return self.beta * np.reciprocal(np.sqrt(cnt))
-
 
 def preprocess_image(img):
     img = rgb2gray(img)
