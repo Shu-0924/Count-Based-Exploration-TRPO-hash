@@ -10,6 +10,12 @@ We compared **TRPO-SimHash** with normal **TRPO** in continuous control, and fou
 
 <br>
 
+![](https://cdn.discordapp.com/attachments/967620602997387374/1114129484052971572/image.png)
+
+We use Red line for **TRPO-SimHash** and Blue line for **TRPO**. Also, we make the rewards of ***MountainCar*** the same as in the original paper. Note that there are no available ***SwimmerGather***, so we use ***ant*** instead. 
+
+<br>
+
 ## Arcade Learning Environment
 We provide following algorithms:
 - **TRPO**

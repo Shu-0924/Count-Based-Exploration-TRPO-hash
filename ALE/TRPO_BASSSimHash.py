@@ -20,6 +20,13 @@ Transition = namedtuple('Transition', ('state', 'action', 'reward', 'key'))
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
+def preprocess_image(img):
+    img = rgb2gray(img)
+    img = resize(img, (52, 52))
+    img = img * 2 - 1
+    return img
+
+
 class BASS(object):
     def __init__(self, C, B):
         self.C = C
@@ -52,13 +59,13 @@ class SimHash(object):
         self.D = D
         self.A = torch.from_numpy(np.random.normal(0, 1, (k, D))).float().to(device)
         self.hash_table = {}
-        self.new_hash_table = {}
         self.beta = beta
 
     def get_keys(self, states):
         keys = []
+        A = torch.from_numpy(self.A).float().to(device)
         for state in states:
-            Av = torch.matmul(self.A, torch.tensor(state).float().to(device)).to('cpu').numpy()
+            Av = torch.matmul(A, torch.tensor(state).float().to(device)).to('cpu').numpy()
             key = (np.asarray(np.sign(Av), dtype=int) + 1) // 2  # to binary code array
             key = int(''.join(key.astype(str).tolist()), base=2)  # to int (binary)
             keys.append(key)
@@ -71,12 +78,6 @@ class SimHash(object):
     def get_bonus(self, keys):
         cnt = np.array([self.hash_table[key] for key in keys])
         return self.beta * np.reciprocal(np.sqrt(cnt))
-
-def preprocess_image(img):
-    img = rgb2gray(img)
-    img = resize(img, (52, 52))
-    img = img * 2 - 1
-    return img
 
 
 class Actor(nn.Module):
@@ -136,7 +137,7 @@ class Critic(nn.Module):
 
 
 class TRPO(object):
-    def __init__(self, env, env_eval, gamma=0.995, lr_c=1e-3, k=256, beta=0.01, save_folder=None, c=20, b=20):
+    def __init__(self, env, env_eval, gamma=0.995, lr_c=1e-3, k=256, beta=0.01, c=20, b=20, save_folder=None):
         self.env = env
         self.env_eval = env_eval
         self.num_states = env.observation_space.shape[0]
@@ -361,8 +362,9 @@ class TRPO(object):
             tags = ['{}/epoch-average-reward'.format(self.env.unwrapped.spec.id)]
             for tag, value in zip(tags, [epoch_avg_reward]):
                 writer.add_scalar(tag, value, i + 1)
-
-            torch.cuda.reset_max_memory_allocated(device=device)
+            
+            if torch.cuda.is_available():
+                torch.cuda.reset_max_memory_allocated(device=device)
             epoch_rewards.clear()
             self.memory.clear()
 
@@ -392,14 +394,15 @@ class TRPO(object):
 
 if __name__ == '__main__':
     random_seed = 48763
-    env_name = 'ALE/Frostbite-v5'
+    env_name = 'ALE/Freeway-v5'
     train_env = gym.make(env_name)
-    test_env = gym.make(env_name, render_mode='human')
+    test_env = gym.make(env_name)
+    # test_env = gym.make(env_name, render_mode='human')
 
     train_env.seed(random_seed)
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
 
-    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=1e-3)
-    agent.train(num_epoch=500, update_step=10000, show_freq=None)
+    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=3e-4)
+    agent.train(num_epoch=1500, update_step=10000, show_freq=None)
     agent.eval(num_episode=5)
