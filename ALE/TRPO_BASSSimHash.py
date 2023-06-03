@@ -57,7 +57,7 @@ class SimHash(object):
     def __init__(self, k, D, beta):
         self.k = k
         self.D = D
-        self.A = torch.from_numpy(np.random.normal(0, 1, (k, D))).float().to(device)
+        self.A = np.random.normal(0, 1, (k, D))
         self.hash_table = {}
         self.beta = beta
 
@@ -137,7 +137,7 @@ class Critic(nn.Module):
 
 
 class TRPO(object):
-    def __init__(self, env, env_eval, gamma=0.995, lr_c=1e-3, k=256, beta=0.01, c=20, b=20, save_folder=None):
+    def __init__(self, env, env_eval, gamma=0.995, lr_c=3e-4, k=256, beta=0.01, c=20, b=20, save_folder=None):
         self.env = env
         self.env_eval = env_eval
         self.num_states = env.observation_space.shape[0]
