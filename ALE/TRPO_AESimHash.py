@@ -374,9 +374,10 @@ class TRPO(object):
             fill_cnt += 1
             if done:
                 state = self.env_eval.reset()
-        for i in range(8):
+        for i in range(5):
             print('\rInitialize AE...({}/5)'.format(i+1), end='')
             self.AE.update()
+        print('\n')
 
         i_episode = 0
         best_reward = None
@@ -385,7 +386,7 @@ class TRPO(object):
                 self.eval(num_episode=1)
             self.actor.train()
             self.critic.train()
-            print('\rEpoch {}/{}'.format(i + 1, num_epoch))
+            print('Epoch {}/{}'.format(i + 1, num_epoch))
             start_time = float(datetime.now().timestamp())
             epoch_rewards = []
 
@@ -448,7 +449,7 @@ class TRPO(object):
 
             if i % 3 == 0:
                 self.AE.update()
-                self.AE.show(num=3)
+                # self.AE.show(num=3)
 
             self.update_agent(update_step=update_step)
             end_time = float(datetime.now().timestamp())
