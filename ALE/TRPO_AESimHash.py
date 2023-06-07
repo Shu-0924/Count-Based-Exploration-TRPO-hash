@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from skimage.color import rgb2gray
 from skimage.transform import resize
 from matplotlib import pyplot as plt
-from collections import namedtuple
+from collections import namedtuple, Counter
 from datetime import datetime
 import numpy as np
 import pathlib
@@ -115,6 +115,7 @@ class AutoEncoder(nn.Module):
         idx = np.arange(self.buffer_size)
         np.random.shuffle(idx)
         idx = idx[:sample_size]
+        total_reconstruct_loss, total_binarize_loss = 0, 0
 
         i = 0
         while i < sample_size:
@@ -128,13 +129,17 @@ class AutoEncoder(nn.Module):
             p_log = reconstructs[torch.arange(reconstructs.size()[0]), labels]
 
             AE_loss = -(p_log + 0.003).sum() / mini_batch_size
-            binarize_loss = (1 / mini_batch_size) * (10 / self.k) * torch.min((1-b)*(1-b), b*b).flatten().sum()
+            binarize_loss = (10 / mini_batch_size) * torch.min((1-b)*(1-b), b*b).flatten().sum()
             loss = AE_loss + binarize_loss
 
             loss.backward()
             self.optim.step()
             self.optim.zero_grad()
             i += mini_batch_size
+            total_reconstruct_loss += AE_loss.data
+            total_binarize_loss += binarize_loss.data
+
+        return total_reconstruct_loss, total_binarize_loss
 
     def show(self, num=1):
         idx = np.arange(self.buffer_size)
@@ -372,7 +377,7 @@ class TRPO(object):
         fill_cnt = 0
         state = self.env_eval.reset()
         while fill_cnt < self.AE.buffer_size:
-            print('\rFilling AE buffer...({}/{})'.format(fill_cnt, self.AE.buffer_size), end='')
+            print('\rFilling AE buffer...({}/{})'.format(fill_cnt + 1, self.AE.buffer_size), end='')
             self.AE.push(preprocess_image(state))
             action = self.env_eval.action_space.sample()
             next_state, reward, done, _ = self.env_eval.step(action)
@@ -380,9 +385,12 @@ class TRPO(object):
             fill_cnt += 1
             if done:
                 state = self.env_eval.reset()
-        for i in range(5):
-            print('\rInitialize AE...({}/5)'.format(i+1), end='')
-            self.AE.update()
+        print('\n')
+        for i in range(20):
+            loss_1, loss_2 = self.AE.update()
+            print('Initialize AE {}/20 -  '.format(i + 1), end='')
+            print('reconstruct loss: {:.2f} - binarize loss: {:.2f}'.format(loss_1, loss_2))
+            # self.AE.show()
         print('\n')
 
         i_episode = 0
@@ -453,16 +461,15 @@ class TRPO(object):
                 best_reward = epoch_avg_reward
                 self.save_model()
 
-            if i % 3 == 0:
-                self.AE.update()
-                # self.AE.show(num=3)
+            loss_1, loss_2 = (self.AE.update() if ((i + 1) % 3 == 0) else (None, None))
 
             self.update_agent(update_step=update_step)
             end_time = float(datetime.now().timestamp())
             running_time = end_time - start_time
             print('\r{}/{} [====================] '.format(update_step, update_step), end='')
             print('- {:.2f}s {:.2f}ms/step '.format(running_time, running_time * 1000 / epoch_t, 2), end='')
-            print('- num_episode: {} - avg_reward: {:.2f}'.format(len(epoch_rewards), epoch_avg_reward))
+            print('- num_episode: {} - avg_reward: {:.2f}'.format(len(epoch_rewards), epoch_avg_reward), end='')
+            print('- reconstruct_loss: {:.2f} - binarize_loss: {:.2f}'.format(loss_1, loss_2)) if ((i + 1) % 3 == 0) else print('')
             print('Peak cuda memory used: {:.2f}MB'.format(int(torch.cuda.max_memory_allocated()) / 1048576), end='\n\n')
             tags = ['{}/epoch-average-reward'.format(self.env.unwrapped.spec.id)]
             for tag, value in zip(tags, [epoch_avg_reward]):
@@ -508,5 +515,5 @@ if __name__ == '__main__':
     np.random.seed(random_seed)
     torch.manual_seed(random_seed)
 
-    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=3e-4, lr_ae=1e-3, k=64)
+    agent = TRPO(train_env, test_env, gamma=0.995, lr_c=3e-4, lr_ae=1e-4, k=64)
     agent.train(num_epoch=1500, update_step=10000, show_freq=None)
