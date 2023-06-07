@@ -33,24 +33,12 @@ class BASS(object):
         self.B = B
 
     def get_features(self, Is):
-        features = []
-        for I in Is:
-            feature = np.zeros((int(np.ceil(I.shape[0]/self.C)), int(np.ceil(I.shape[1]/self.C)), I.shape[2]))
-            for i in range(feature.shape[0]):
-                for j in range(feature.shape[1]):
-                    for z in range(feature.shape[2]):
-                        if self.C*(i+1) > I.shape[0]:
-                            i_UpBound = I.shape[0]-1
-                        else:
-                            i_UpBound = self.C * (i + 1)
-                        if self.C * (j + 1) > I.shape[1]:
-                            j_UpBound = I.shape[1] - 1
-                        else:
-                            j_UpBound = self.C * (j + 1)
-                        cell = I[(self.C*i):i_UpBound, (self.C*j):j_UpBound, z]
-                        feature[i,j,z] = self.B//(255*(self.C**2))*(np.sum(cell))
-            features.append(feature)
-        return np.asarray(features)
+        Is = np.asarray(Is)
+        idx1 = np.arange(0, Is.shape[1], self.C)
+        idx2 = np.arange(0, Is.shape[2], self.C)
+        res = np.add.reduceat(np.add.reduceat(Is, idx1, axis=1), idx2, axis=2)
+        features = self.B // (255 * (self.C ** 2)) * res
+        return np.asarray(features, dtype=np.float32)
 
 
 class SimHash(object):
@@ -329,7 +317,7 @@ class TRPO(object):
 
                 states, actions, rewards, prev_raw_pixels = zip(*sample)
                 features = self.bass.get_features(prev_raw_pixels)
-                features = np.reshape(features, (features.shape[0], -1)) # flatten each feature
+                features = np.reshape(features, (features.shape[0], -1))  # flatten each feature
                 keys = self.simhash.get_keys(features)
                 states = torch.stack([torch.from_numpy(state) for state in states], dim=0).float()
                 actions = torch.as_tensor(actions).unsqueeze(1)
@@ -394,7 +382,7 @@ class TRPO(object):
 
 if __name__ == '__main__':
     random_seed = 48763
-    env_name = 'ALE/Freeway-v5'
+    env_name = 'ALE/MontezumaRevenge-v5'
     train_env = gym.make(env_name)
     test_env = gym.make(env_name)
     # test_env = gym.make(env_name, render_mode='human')
