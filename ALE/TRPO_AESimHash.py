@@ -242,6 +242,7 @@ class TRPO(object):
         pathlib.Path(self.save_folder).mkdir(parents=True, exist_ok=True)
         self.actor_path = self.save_folder + '/actor'
         self.critic_path = self.save_folder + '/critic'
+        self.ae_path = self.save_folder + '/autoencoder'
 
     def select_action(self, state):
         with torch.no_grad():
@@ -365,6 +366,7 @@ class TRPO(object):
     def save_model(self):
         torch.save(self.actor.state_dict(), self.actor_path)
         torch.save(self.critic.state_dict(), self.critic_path)
+        torch.save(self.AE.state_dict(), self.ae_path)
 
     def train(self, num_epoch=500, update_step=10000, show_freq=None):
         fill_cnt = 0
