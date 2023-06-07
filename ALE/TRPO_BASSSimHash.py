@@ -37,7 +37,7 @@ class BASS(object):
         idx1 = np.arange(0, Is.shape[1], self.C)
         idx2 = np.arange(0, Is.shape[2], self.C)
         res = np.add.reduceat(np.add.reduceat(Is, idx1, axis=1), idx2, axis=2)
-        features = self.B // (255 * (self.C ** 2)) * res
+        features = self.B * res // (255 * (self.C ** 2))
         return np.asarray(features, dtype=np.float32)
 
 
