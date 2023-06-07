@@ -143,14 +143,18 @@ class AutoEncoder(nn.Module):
         with torch.no_grad():
             for i in idx:
                 example = self.replay_buffer[i]
-                re, _ = self.forward(torch.from_numpy(example).float().view(1, 1, 52, 52))
-                re = re.permute(0, 2, 3, 1).detach().numpy()[0]
-                re = ((np.array(np.argmax(re, axis=-1), dtype=float) + 0.5) / 32.0) - 1.0
-                fig = plt.figure(figsize=(10, 6))
-                fig.add_subplot(1, 2, 1)
+                label_true = ((torch.from_numpy(example) + 1) * 32).clamp(min=0.1, max=63.9).floor().long().numpy()
+                reconstruct, b = self.forward(torch.from_numpy(example).float().view(1, 1, 52, 52))
+                reconstruct = reconstruct.permute(0, 2, 3, 1).detach().numpy()[0]
+                label_pred = np.argmax(reconstruct, axis=-1)
+                reconstruct_img = ((np.array(label_pred, dtype=float) + 0.5) / 32.0) - 1.0
+                fig = plt.figure(figsize=(12, 5))
+                fig.add_subplot(1, 3, 1)
                 plt.imshow(example, cmap='gray')
-                fig.add_subplot(1, 2, 2)
-                plt.imshow(re, cmap='gray')
+                fig.add_subplot(1, 3, 2)
+                plt.imshow(reconstruct_img, cmap='gray')
+                fig.add_subplot(1, 3, 3)
+                plt.imshow(np.array(label_pred == label_true, dtype=int) * 2.0 - 1.0, cmap='gray', vmin=-1.0, vmax=1.0)
                 plt.show()
 
 
