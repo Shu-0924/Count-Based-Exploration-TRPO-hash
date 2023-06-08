@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from skimage.color import rgb2gray
 from skimage.transform import resize
 from matplotlib import pyplot as plt
-from collections import namedtuple, Counter
+from collections import namedtuple
 from datetime import datetime
 import numpy as np
 import pathlib
@@ -55,12 +55,11 @@ class SimHash(object):
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, buffer_size=100000, lr=1e-3, k=64):
+    def __init__(self, buffer_size=100000, lr=1e-3):
         super(AutoEncoder, self).__init__()
         self.buffer_position = 0
         self.buffer_size = buffer_size
         self.replay_buffer = np.zeros((buffer_size, 52, 52))
-        self.k = k
 
         self.flatten = nn.Flatten()
         self.sigmoid = nn.Sigmoid()
@@ -96,7 +95,7 @@ class AutoEncoder(nn.Module):
         x = self.batch_norm3(F.relu(x))
 
         x = self.layer4(self.flatten(x))
-        mid = self.sigmoid(self.layer5(x) + (torch.rand(256) * 0.6 - 0.3).to(device))
+        mid = self.sigmoid(self.sigmoid(self.layer5(x)) + (torch.rand(256) * 0.6 - 0.3).to(device))
         x = self.layer6(mid).view((-1, 96, 5, 5))
 
         x = self.layer7(x)
@@ -110,7 +109,7 @@ class AutoEncoder(nn.Module):
         self.replay_buffer[self.buffer_position] = frame
         self.buffer_position = (self.buffer_position + 1) % self.buffer_size
 
-    def update(self, sample_size=15000, mini_batch_size=50):
+    def update(self, sample_size=15000, mini_batch_size=50, regularize=True):
         sample_size = min(self.buffer_size, sample_size)
         idx = np.arange(self.buffer_size)
         np.random.shuffle(idx)
@@ -129,8 +128,8 @@ class AutoEncoder(nn.Module):
             p_log = reconstructs[torch.arange(reconstructs.size()[0]), labels]
 
             AE_loss = -(p_log + 0.003).sum() / mini_batch_size
-            binarize_loss = (10 / mini_batch_size) * torch.min((1-b)*(1-b), b*b).flatten().sum()
-            loss = AE_loss + binarize_loss
+            binarize_loss = (40 / mini_batch_size) * torch.min((1-b)*(1-b), b*b).flatten().sum()
+            loss = AE_loss + (binarize_loss if (regularize is True) else 0)
 
             loss.backward()
             self.optim.step()
@@ -227,7 +226,7 @@ class TRPO(object):
         self.num_actions = env.action_space.n
         self.simhash = SimHash(k, 256, beta)
 
-        self.AE = AutoEncoder(lr=lr_ae, k=k)
+        self.AE = AutoEncoder(lr=lr_ae)
         self.actor = Actor(num_outputs=self.num_actions)
         self.critic = Critic()
         self.AE.to(device)
@@ -375,20 +374,25 @@ class TRPO(object):
 
     def train(self, num_epoch=500, update_step=10000, show_freq=None):
         fill_cnt = 0
-        state = self.env_eval.reset()
+        state = self.env.reset()
         while fill_cnt < self.AE.buffer_size:
             print('\rFilling AE buffer...({}/{})'.format(fill_cnt + 1, self.AE.buffer_size), end='')
             self.AE.push(preprocess_image(state))
-            action = self.env_eval.action_space.sample()
-            next_state, reward, done, _ = self.env_eval.step(action)
+            action = self.env.action_space.sample()
+            next_state, reward, done, _ = self.env.step(action)
             state = next_state
             fill_cnt += 1
             if done:
-                state = self.env_eval.reset()
+                state = self.env.reset()
         print('\n')
         for i in range(20):
-            loss_1, loss_2 = self.AE.update()
-            print('Initialize AE {}/20 -  '.format(i + 1), end='')
+            loss_1, loss_2 = self.AE.update(regularize=False)
+            print('Initialize AE {}/40 -  '.format(i + 1), end='')
+            print('reconstruct loss: {:.2f} - binarize loss: {:.2f}'.format(loss_1, loss_2))
+            # self.AE.show()
+        for i in range(20):
+            loss_1, loss_2 = self.AE.update(regularize=True)
+            print('Initialize AE {}/40 -  '.format(i + 21), end='')
             print('reconstruct loss: {:.2f} - binarize loss: {:.2f}'.format(loss_1, loss_2))
             # self.AE.show()
         print('\n')
