@@ -30,26 +30,27 @@ class SimHash(object):
     def __init__(self, k, D, beta):
         self.k = k
         self.D = D
-        self.A = np.random.normal(0, 1, (k, D))
-        self.hash_table = {}
         self.beta = beta
+        self.A = np.random.normal(0, 1, (k, D))
+        self.primes = [999931, 999953, 999959, 999961, 999979, 999983]
+        self.hash_table = np.zeros((6, 1000000), dtype=int)
 
     def get_keys(self, states):
         keys = []
         A = torch.from_numpy(self.A).float().to(device)
-        for state in states:
-            Av = torch.matmul(A, torch.tensor(state).float().to(device)).to('cpu').numpy()
+        states = torch.from_numpy(np.array(states))
+        Avs = torch.matmul(A, torch.as_tensor(states).float().to(device).transpose(0, 1))
+        Avs = Avs.to('cpu').transpose(0, 1).numpy()
+        for Av in Avs:
             key = (np.asarray(np.sign(Av), dtype=int) + 1) // 2  # to binary code array
             key = int(''.join(key.astype(str).tolist()), base=2)  # to int (binary)
+            for i, prime in enumerate(self.primes):
+                self.hash_table[i][key % prime] += 1
             keys.append(key)
-            if key in self.hash_table:
-                self.hash_table[key] += 1
-            else:
-                self.hash_table[key] = 1
         return np.asarray(keys)
 
     def get_bonus(self, keys):
-        cnt = np.array([self.hash_table[key] for key in keys])
+        cnt = np.array([min(self.hash_table[i][key % prime] for i, prime in enumerate(self.primes)) for key in keys])
         return self.beta * np.reciprocal(np.sqrt(cnt))
 
 
@@ -305,6 +306,7 @@ class TRPO(object):
 
                 self.memory.append(Transition(states, actions, rewards, keys))
                 epoch_rewards.append(episode_reward)
+                prev_states.clear()
                 sample.clear()
 
                 i_episode += 1
