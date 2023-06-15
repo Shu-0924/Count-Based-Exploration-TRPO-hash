@@ -27,6 +27,14 @@ We provide following algorithms:
 
 <br>
 
+![](https://cdn.discordapp.com/attachments/855385710084751373/1118865662425710642/image.png)
+
+<br>
+
+We use 10k batch size and 15M total step to train. Although SimHash makes reward grows fast initially, it always stop at about 20 reward in Freeway environment. We tried the Count-Min Sketch method, but it only gave faster training time and even made the performance worse. We think it may contain some bugs in our SimHash implementation, or maybe our smaller batch size make the result quite different from the paper.
+
+<br>
+
 ## How to run
 
 #### Python version:
